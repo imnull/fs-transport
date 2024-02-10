@@ -1,16 +1,26 @@
 {
   "name": "@imnull/fs-transport",
   "version": "1.0.0",
-  "description": "",
   "main": "libs/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.json"
   },
-  "author": "",
+  "author": "imnull@outlook.com",
   "license": "ISC",
   "dependencies": {
     "sass": "^1.70.0",
     "typescript": "^5.3.3"
-  }
+  },
+  "types": "./libs/index.d.ts",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/imnull/fs-transport.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imnull/fs-transport/issues"
+  },
+  "homepage": "https://github.com/imnull/fs-transport#readme",
+  "description": ""
 }
