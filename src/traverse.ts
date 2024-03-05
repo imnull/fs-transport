@@ -15,7 +15,7 @@ type TTransItem = TTraverseItem & {
 type TTransPipe = {
     test: RegExp | ((item: TTraverseItem) => boolean);
     rename?: string;
-    resolve: ((file: TTransItem) => TTransItem)
+    resolve: ((file: TTransItem, env: Record<string, boolean>) => TTransItem)
 }
 
 const testPass = (pipe: TTransPipe, item: TTransItem) => {
@@ -106,11 +106,18 @@ export class TransDir {
     private readonly source: string
     private readonly pipes: TTransPipe[]
     private readonly ignores: TRule[]
+    private readonly env: Record<string, boolean>
 
     constructor(source: string) {
         this.source = source
         this.pipes = []
         this.ignores = []
+        this.env = {}
+    }
+
+    define(env: Record<string, boolean>) {
+        Object.assign(this.env, env)
+        return this
     }
 
     ignore(rule: TRule) {
@@ -134,10 +141,12 @@ export class TransDir {
             throw '目标路径不是目录，请选个目录（文件夹）'
         }
 
+        const env = { ...this.env }
+
         traverse(this.source, _item => {
             const item: TTransItem = { ..._item, content: fs.readFileSync(_item.absolutePath) }
             const pipes = this.pipes.filter(pipe => testPass(pipe, item))
-            const newItem = pipes.reduce((item, pipe) => pipe.resolve(item), item)
+            const newItem = pipes.reduce((item, pipe) => pipe.resolve(item, env), item)
             saveItem(newItem, this.source, target)
         }, {
             ignores: [...this.ignores]
