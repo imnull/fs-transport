@@ -32,7 +32,16 @@ export const checkDef = (code: string, params: Record<string, boolean>): string 
         if(endLine < 0) {
             return code
         }
-        const part = lines.splice(startLine, endLine + 1 - startLine)
+        let part = lines.splice(startLine, endLine + 1 - startLine)
+        let indent = 0
+        const head = part[1]
+        if(head && typeof head === 'string' && /^\s+$/.test(head)) {
+            indent = head.length
+            part = part.slice(1)
+        }
+        part = part.map(line => {
+            return ' '.repeat(indent) + line.replace(/^(\s*)\/\/\s*/, '')
+        })
         if((!isN && params[N]) || (isN && !params[N])) {
             lines.splice(startLine, 0, ...part.slice(1, part.length - 1))
         }
@@ -43,13 +52,19 @@ export const checkDef = (code: string, params: Record<string, boolean>): string 
 }
 
 
-// console.log(checkDef(`var a = 1
+// const code = `var a = 1
 // // #ifdef ABC
-// a = 2
+    
+// // a = 2
 // // #endif
 // var b = 2
 // // #ifndef xyz
-// b = 3
+// // b = 3
 // // #endif
 
-// `, { ABC: true, xyz: false }))
+// `
+
+// console.log(checkDef(code, { ABC: false, xyz: false }))
+// console.log(checkDef(code, { ABC: true, xyz: false }))
+// console.log(checkDef(code, { ABC: false, xyz: true }))
+// console.log(checkDef(code, { ABC: true, xyz: true }))
