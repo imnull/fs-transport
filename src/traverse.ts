@@ -99,8 +99,8 @@ const saveItem = (item: TTransItem, source: string, target: string) => {
     const finPath = path.resolve(targetDir, rename || name)
     fs.writeFileSync(finPath, content)
 
-    console.log(chalk.blue('from:'), chalk.blue(sourceFull))
-    console.log(chalk.green('  to:'), chalk.green(finPath))
+    console.log(chalk.blue('[<<] from'), chalk.blue(sourceFull))
+    console.log(chalk.green('[>>]   to'), chalk.green(finPath))
 }
 
 export abstract class TransBase {
@@ -127,6 +127,19 @@ export abstract class TransBase {
     pipe(pipe: TTransPipe) {
         this.pipes.push(pipe)
         return this
+    }
+
+    protected writeTitle(title: string, width: number = 48) {
+        // const width = 48
+        // const title = `[TransTask] executing ${this.tasks.length} tasks ...`
+        const tail = width - title.length - 6
+        console.log('')
+        console.log(chalk.gray('#'.repeat(width)))
+        console.log(chalk.gray('#'), ' '.repeat(width - 4), chalk.gray('#'))
+        console.log(chalk.gray('#'), ' '.repeat(Math.floor(tail / 2)), chalk.whiteBright(title), ' '.repeat(Math.ceil(tail / 2)), chalk.gray('#'))
+        console.log(chalk.gray('#'), ' '.repeat(width - 4), chalk.gray('#'))
+        console.log(chalk.gray('#'.repeat(width)))
+        console.log('')
     }
 
     protected trans(sourceDir: string, targetDir: string, env: Record<string, boolean>, baseItem: TTraverseItem) {
@@ -157,6 +170,8 @@ export class TransDir extends TransBase {
             throw '目标路径不是目录，请选个目录（文件夹）'
         }
 
+        this.writeTitle(`[TransDir] outputting ...`)
+
         const env = { ...this.env }
 
         traverse(this.source, it => {
@@ -164,6 +179,10 @@ export class TransDir extends TransBase {
         }, {
             ignores: [...this.ignores]
         })
+
+        console.log('')
+        console.log(chalk.green.bold('[TransDir] Done successfully!'))
+        console.log('')
     }
 }
 
@@ -208,10 +227,14 @@ export class TransTask extends TransBase {
     }
 
     exec() {
+
+        this.writeTitle(`[TransTask] executing ${this.tasks.length} tasks ...`)
+
         const env = { ...this.env }
-        this.tasks.forEach(task => {
+
+        this.tasks.forEach((task, idx) => {
             const { items, source, target, clear } = getTaskItems(task)
-            console.log(chalk.yellow.bold('[TASK]'), chalk.yellow(task.description))
+            console.log(chalk.yellow.bold(`[task] ${idx + 1}/${this.tasks.length}`), chalk.yellow(task.description))
             if (clear) {
                 console.log(chalk.redBright.bold('[CLEAN UP DIR]'), chalk.redBright(target))
                 rmdir(target)
@@ -219,6 +242,9 @@ export class TransTask extends TransBase {
             items.forEach(item => {
                 this.trans(source, target, env, item)
             })
+            console.log('')
         })
+        console.log(chalk.green.bold('[TransTask] Done successfully!'))
+        console.log('')
     }
 }

@@ -26,7 +26,7 @@ rmdir(target)
 
 const tasks = new TransTask()
 tasks.addTask({
-    description: '任务1',
+    description: 'some task 1',
     sourceDir: source,
     targetDir: target,
     files: [
@@ -34,7 +34,7 @@ tasks.addTask({
         '2/2.js'
     ]
 }, {
-    description: '任务2',
+    description: 'some task 2',
     sourceDir: source,
     targetDir: target,
     clearTargetDir: true,
