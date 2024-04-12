@@ -33,5 +33,20 @@ tasks.addTask({
         '1.txt',
         '2/2.js'
     ]
+}, {
+    description: '任务2',
+    sourceDir: source,
+    targetDir: target,
+    clearTargetDir: true,
+})
+.pipe({
+    test: /\.txt$/,
+    resolve: (item, env) => {
+        return {
+            ...item,
+            rename: item.name.replace(/\.ts$/, '.js'),
+            content: Buffer.from('abc', 'utf-8')
+        }
+    }
 })
 .exec()

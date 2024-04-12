@@ -172,10 +172,11 @@ type TTask = {
     targetDir: string;
     description: string;
     files?: string[];
+    clearTargetDir?: boolean;
 }
 
 const getTaskItems = (task: TTask) => {
-    const { sourceDir, targetDir, files } = task
+    const { sourceDir, targetDir, files, clearTargetDir = false } = task
     if (Array.isArray(files) && files.length > 0) {
         const items = files
             .map(file => path.join(sourceDir, file))
@@ -185,13 +186,13 @@ const getTaskItems = (task: TTask) => {
                 dir: path.dirname(file),
                 name: path.basename(file),
             })) as TTraverseItem[]
-        return { source: sourceDir, target: targetDir, items }
+        return { source: sourceDir, target: targetDir, clear: false, items }
     } else {
         const items: TTraverseItem[] = []
         traverse(sourceDir, item => {
             items.push(item)
         })
-        return { source: sourceDir, target: targetDir, items }
+        return { source: sourceDir, target: targetDir, clear: clearTargetDir, items }
     }
 }
 export class TransTask extends TransBase {
@@ -209,8 +210,12 @@ export class TransTask extends TransBase {
     exec() {
         const env = { ...this.env }
         this.tasks.forEach(task => {
-            const { items, source, target } = getTaskItems(task)
+            const { items, source, target, clear } = getTaskItems(task)
             console.log(chalk.yellow.bold('[TASK]'), chalk.yellow(task.description))
+            if (clear) {
+                console.log(chalk.redBright.bold('[CLEAN UP DIR]'), chalk.redBright(target))
+                rmdir(target)
+            }
             items.forEach(item => {
                 this.trans(source, target, env, item)
             })
