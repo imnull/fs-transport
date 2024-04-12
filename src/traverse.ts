@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import chalk from 'chalk'
 
 type TTraverseItem = {
     absolutePath: string;
@@ -29,7 +30,7 @@ const testPass = (pipe: TTransPipe, item: TTransItem) => {
 type TRule = RegExp | ((str: string) => boolean)
 
 const testRule = (rule: TRule, str: string) => {
-    if(typeof rule === 'function') {
+    if (typeof rule === 'function') {
         return rule(str)
     } else {
         return rule.test(str)
@@ -41,7 +42,7 @@ export const traverse = (absolutePath: string, callback: (item: TTraverseItem) =
 } = {}) => {
 
     const { ignores = [] } = options
-    if(ignores.some(rule => testRule(rule, absolutePath))) {
+    if (ignores.some(rule => testRule(rule, absolutePath))) {
         return
     }
 
@@ -66,19 +67,20 @@ export const traverse = (absolutePath: string, callback: (item: TTraverseItem) =
     }
 }
 
+
 export const rmdir = (p: string) => {
-    if(!fs.existsSync(p)) {
+    if (!fs.existsSync(p)) {
         return
     }
     const stat = fs.statSync(p)
-    if(stat.isDirectory()) {
+    if (stat.isDirectory()) {
         const names = fs.readdirSync(p).filter(n => n !== '.' && n !== '..')
         names.forEach(n => {
             const full = path.join(p, n)
             rmdir(full)
         })
         fs.rmdirSync(p)
-    } else if(stat.isFile()) {
+    } else if (stat.isFile()) {
         fs.unlinkSync(p)
     }
 }
@@ -97,19 +99,16 @@ const saveItem = (item: TTransItem, source: string, target: string) => {
     const finPath = path.resolve(targetDir, rename || name)
     fs.writeFileSync(finPath, content)
 
-    console.log('>', sourceFull)
-    console.log('<', finPath)
+    console.log(chalk.blue('from:'), chalk.blue(sourceFull))
+    console.log(chalk.green('  to:'), chalk.green(finPath))
 }
 
+export abstract class TransBase {
+    protected readonly pipes: TTransPipe[]
+    protected readonly ignores: TRule[]
+    protected readonly env: Record<string, boolean>
 
-export class TransDir {
-    private readonly source: string
-    private readonly pipes: TTransPipe[]
-    private readonly ignores: TRule[]
-    private readonly env: Record<string, boolean>
-
-    constructor(source: string) {
-        this.source = source
+    constructor() {
         this.pipes = []
         this.ignores = []
         this.env = {}
@@ -130,6 +129,23 @@ export class TransDir {
         return this
     }
 
+    protected trans(sourceDir: string, targetDir: string, env: Record<string, boolean>, baseItem: TTraverseItem) {
+        const item: TTransItem = { ...baseItem, content: fs.readFileSync(baseItem.absolutePath) }
+        const pipes = this.pipes.filter(pipe => testPass(pipe, item))
+        const newItem = pipes.reduce((item, pipe) => pipe.resolve(item, env), item)
+        saveItem(newItem, sourceDir, targetDir)
+    }
+}
+
+
+export class TransDir extends TransBase {
+    private readonly source: string
+
+    constructor(source: string) {
+        super()
+        this.source = source
+    }
+
     output(target: string) {
         if (!target) {
             throw '请输入目标目录'
@@ -143,13 +159,61 @@ export class TransDir {
 
         const env = { ...this.env }
 
-        traverse(this.source, _item => {
-            const item: TTransItem = { ..._item, content: fs.readFileSync(_item.absolutePath) }
-            const pipes = this.pipes.filter(pipe => testPass(pipe, item))
-            const newItem = pipes.reduce((item, pipe) => pipe.resolve(item, env), item)
-            saveItem(newItem, this.source, target)
+        traverse(this.source, it => {
+            this.trans(this.source, target, env, it)
         }, {
             ignores: [...this.ignores]
+        })
+    }
+}
+
+type TTask = {
+    sourceDir: string;
+    targetDir: string;
+    description: string;
+    files?: string[];
+}
+
+const getTaskItems = (task: TTask) => {
+    const { sourceDir, targetDir, files } = task
+    if (Array.isArray(files) && files.length > 0) {
+        const items = files
+            .map(file => path.join(sourceDir, file))
+            .filter(file => fs.existsSync(file) && fs.statSync(file).isFile())
+            .map(file => ({
+                absolutePath: file,
+                dir: path.dirname(file),
+                name: path.basename(file),
+            })) as TTraverseItem[]
+        return { source: sourceDir, target: targetDir, items }
+    } else {
+        const items: TTraverseItem[] = []
+        traverse(sourceDir, item => {
+            items.push(item)
+        })
+        return { source: sourceDir, target: targetDir, items }
+    }
+}
+export class TransTask extends TransBase {
+    private readonly tasks: TTask[]
+    constructor() {
+        super()
+        this.tasks = []
+    }
+
+    addTask(...tasks: TTask[]) {
+        this.tasks.push(...tasks)
+        return this
+    }
+
+    exec() {
+        const env = { ...this.env }
+        this.tasks.forEach(task => {
+            const { items, source, target } = getTaskItems(task)
+            console.log(chalk.yellow.bold('[TASK]'), chalk.yellow(task.description))
+            items.forEach(item => {
+                this.trans(source, target, env, item)
+            })
         })
     }
 }
