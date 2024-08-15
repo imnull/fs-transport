@@ -97,4 +97,38 @@ a = 'b'
 export default a
 ```
 
+# Var
+
+As a placeholder, you can use `${key}$` to replace with value.
+
+```ts
+const code = `var a = 1, _var = 0
+// _var = $VAR$
+`
+console.log(checkDef(code, { VAR: undefined }))
+console.log(checkDef(code, { VAR: null }))
+console.log(checkDef(code, { VAR: '3' }))
+console.log(checkDef(code, { VAR: 4 }))
+console.log(checkDef(code, { VAR: { a: 1, b:[1] } }))
+```
+
+Then result should be:
+
+```
+var a = 1, _var = 0
+_var = void(0)
+
+var a = 1, _var = 0
+_var = null
+
+var a = 1, _var = 0
+_var = "3"
+
+var a = 1, _var = 0
+_var = 4
+
+var a = 1, _var = 0
+_var = {"a":1,"b":[1]}
+```
+
 That's it.

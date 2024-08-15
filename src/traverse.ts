@@ -114,7 +114,7 @@ export abstract class TransBase {
         this.env = {}
     }
 
-    define(env: Record<string, boolean>) {
+    define(env: Record<string, any>) {
         Object.assign(this.env, env)
         return this
     }
@@ -247,4 +247,34 @@ export class TransTask extends TransBase {
         console.log(chalk.green.bold('[TransTask] Done successfully!'))
         console.log('')
     }
+}
+
+export const quickTask = (config: {
+    name: string;
+    source: string;
+    target: string;
+    env?: Record<string, any>;
+    tasks?: { source: string; desc?: string; target?: string; clear?: boolean; files?: string[] }[];
+}) => {
+    const { name, tasks = [], env = {}, source: SOURCE, target: TARGET } = config
+    const finTasks: TTask[] = tasks.map(task => {
+        const { source, desc = source, target = source, clear = false, files } = task
+        const finTask: TTask = {
+            description: `${name}: ${desc}`,
+            sourceDir: path.resolve(SOURCE, source),
+            targetDir: path.resolve(TARGET, target),
+            clearTargetDir: clear,
+        }
+        if(Array.isArray(files)) {
+            finTask.files = [...files]
+        }
+        return finTask
+    })
+
+    const task = new TransTask().addTask(...finTasks).define(env)
+    task.p
+
+    return task
+
+    // exports.initTrans(new TransTask().addTask(...finTasks), env).exec()
 }
