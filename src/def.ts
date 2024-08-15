@@ -80,12 +80,12 @@ export const checkDef = (code: string, params: Record<string, any>): string => {
 }
 
 
-const code = `var a = 1, _var = 0
-// _var = $VAR$
-`
+// const code = `var a = 1, _var = 0
+// // _var = $VAR$
+// `
 
-console.log(checkDef(code, { VAR: void(0) }))
-console.log(checkDef(code, { VAR: null }))
-console.log(checkDef(code, { VAR: '3' }))
-console.log(checkDef(code, { VAR: 4 }))
-console.log(checkDef(code, { VAR: { a: 1, b:[1] } }))
+// console.log(checkDef(code, { VAR: void(0) }))
+// console.log(checkDef(code, { VAR: null }))
+// console.log(checkDef(code, { VAR: '3' }))
+// console.log(checkDef(code, { VAR: 4 }))
+// console.log(checkDef(code, { VAR: { a: 1, b:[1] } }))

@@ -272,8 +272,6 @@ export const quickTask = (config: {
     })
 
     const task = new TransTask().addTask(...finTasks).define(env)
-    task.p
-
     return task
 
     // exports.initTrans(new TransTask().addTask(...finTasks), env).exec()
